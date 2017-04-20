@@ -154,6 +154,113 @@ file_list <- unzip(zipfile = zip_path, list = TRUE) %>%
 unzip(zipfile = zip_path, exdir = temp_path)
 
 
+#------------------------------------------------------------------------------*
+# funtion to read files
+#------------------------------------------------------------------------------*
+read_population_2011 <- function(file_path, skip = 3){
+  # Get department name from file name
+  department <- gsub(
+    "(^| )([a-z])", "\\1\\U\\2",
+    gsub("(^/([^/]+/)+)|([0-9]+ )|([^a-z .])|(.xls$)", "", tolower(file_path)),
+    perl = TRUE
+  )
+  
+  # Report current department
+  cat("\nReading: ", department, "\n", sep = "")
+  
+  # Get file sheets
+  file_sheets <- excel_sheets(file_path)
+  
+  
+  # Function to read each sheet
+  read_pop_sheet <- function(sheet, file = file_path, skip_lines = skip){
+    
+    # Report sheet (year)
+    cat(" ", sheet)
+    
+    fixes <- c(
+      "Totonicapan", "Suchitepequez", "Retalhuleu", "Quiche", "Alta Verapaz",
+      "Peten", "Jutiapa", " Jalapa", "Chiquimula", "Izabal", "Santa Rosa"
+    )
+    
+    # Configuration exceptions
+    skip <- case_when(
+      # department == "Santa Rosa" & sheet == "2012" ~ 4,
+      # department == "Santa Rosa" & sheet == "2015" ~ 5,
+      department %in% fixes & sheet == "2012" ~ 4,
+      department %in% fixes & sheet == "2015" ~ 5,
+      TRUE ~ skip
+    )
+    
+    # Read file contents
+    pop_sheet <- read_excel(
+      path = file, sheet = sheet, skip = skip_lines , na = "?"
+    )
+    
+    # Fix sheet names
+    if(is.na(as.integer(sheet))){
+      sheet <- as.character(2010 + as.integer(gsub("[^0-9]", "", sheet)))
+      cat(" (", sheet, ") ", sep = "")
+    }
+    
+    # Set variable names
+    pop_sheet <- pop_sheet %>%
+      # Fix names
+      set_names(
+        gsub(" +", "_", tolower(iconv(names(.), to = "ASCII//TRANSLIT")))
+      ) %>%
+      # Fix age variables and extract years
+      filter(!is.na(sexo)) %>%
+      mutate(
+        year = as.integer(sheet),
+        age = as.integer(gsub("['+]", "", sexo)),
+        group = stats::filter(is.na(age), 1, "recursive")
+      ) %>%
+      group_by(group) %>%
+      mutate(sexo = first(sexo)) %>%
+      ungroup %>%
+      filter(!is.na(age)) %>%
+      gather(key = municipality, value = population, -year, -age, -group, -sexo) %>%
+      # Tag with department
+      mutate(
+        municipality = gsub(
+          "(^| )([a-z])", "\\1\\U\\2",
+          gsub("_", " ", municipality),
+          perl = TRUE
+        ),
+        department = department
+      ) %>%
+      select(year, department, municipality, sex = sexo, age, population) %>%
+      mutate(
+        # Fix factors
+        sex = recode(
+          tolower(sex),
+          hombres = "male",
+          mujeres = "female"
+        ),
+        population = as.numeric(population)
+      )
+    
+    # Return data
+    return(pop_sheet)
+  }
+  
+  # Read all sheets
+  pop_file <- lapply(file_sheets, read_pop_sheet) %>%
+    bind_rows()
+  
+  cat("\n")
+  
+  # Return data
+  return(pop_file)
+}
+
+# Read in all files
+pop_2011_2015 <- file_list %>%
+  grep("^[^()]+$", ., value = TRUE) %>%
+  lapply(read_population_2011) %>%
+  bind_rows()
+
 # Remove files
 file.remove(file_list)
 
