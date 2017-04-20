@@ -268,6 +268,58 @@ file.remove(file_list)
 
 
 #------------------------------------------------------------------------------*
+# Bind datasets ----
+#------------------------------------------------------------------------------*
+
+
+pop_2000_2015 <- pop_2000_2010 %>%
+  bind_rows(pop_2011_2015) %>%
+  # Fix categories
+  mutate(
+    department = recode(
+      department,
+      "Huehetenango" = "Huehuetenango",
+      " Jalapa" = "Jalapa"
+    ),
+    municipality = gsub("(^ +)|( +$)", "", municipality),
+    municipality = recode(
+      municipality,
+      "Santa Catarina La Tinta" = "Santa Catalina La Tinta",
+      "Melchor" = "Melchor De Mencos",
+      "San Agustin Acasagustlan" = "San Agustin Acasaguastlan",
+      "Chinuautla" = "Chinautla",
+      "Petapa" = "San Miguel Petapa",
+      "Acatempa" = "San Jose Acatempa",
+      "San Martin Zapotitlan" = "San Martin Zapotitlan",
+      "San Bartolome" = "San Bartolome Milpas Altas",
+      "Santa Maria De Jesus" = "Santa Maria De Jesus",
+      "Santiago Sactepequez" = "Santiago Sacatepequez",
+      "Santa Cruz Naranajo" = "Santa Cruz Naranjo",
+      "Santa Catalina Ixtahuacan" = "Santa Catarina Ixtahuacan"
+    ),
+    # Fix Huehuetenango
+    municipality = ifelse(
+      test = department == "Huehuetenango",
+      yes = recode(
+        municipality,
+        "Barrillas" = "Santa Cruz Barillas",
+        "Concepcion" = "Concepcion Huista",
+        "San  Idelfonso Ixtahuacan" = "San Idelfonso Ixtahuacan",
+        "Santiago Chimaltenanango" = "Santiago Chimaltenango"
+      ),
+      no = municipality
+    ),
+    # Population as a number
+    population = as.numeric(population)
+  )
+
+# Clean up
+rm(pop_2000_2010, pop_2011_2015)
+
+
+
+
+#------------------------------------------------------------------------------*
 # Collect data from 2016-2020 period ----
 #------------------------------------------------------------------------------*
 
