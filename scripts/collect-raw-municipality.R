@@ -323,6 +323,131 @@ rm(pop_2000_2010, pop_2011_2015)
 # Collect data from 2016-2020 period ----
 #------------------------------------------------------------------------------*
 
+#------------------------------------------------------------------------------*
+# Load raw data 2016 - 2020
+#------------------------------------------------------------------------------*
+# Source:
+# http://epidemiologia.mspas.gob.gt/files/Proyecciones%20Poblacion%202000-2020/
+#------------------------------------------------------------------------------*
+
+
+#------------------------------------------------------------------------------*
+# funtion to read files
+#------------------------------------------------------------------------------*
+read_population_2016 <- function(file_path, skip = 0){
+  
+  # Read file to gather variable metadata
+  pop_sheets <- excel_sheets(path = file_path) %>%
+    set_names(.)
+  
+  
+  #----------------------------------------------------------------------------*
+  # Function to read each sheet
+  #----------------------------------------------------------------------------*
+  read_pop_sheet <- function(sheet){
+    
+    # Report sheet (year)
+    cat(" ", sheet)
+    
+    # Configuration exceptions
+    skip <- case_when(
+      sheet == "Total" ~ 3,
+      sheet == "Hombres" ~ 3,
+      sheet == "Mujeres" ~ 3,
+      TRUE ~ skip
+    )
+    
+    # Read sheet contents
+    pop_sheet <- read_excel(file_path, sheet = sheet, skip = skip, na = "-")
+    
+    # Get variable names
+    years <- pop_sheet %>%
+      slice(1) %>%
+      unlist %>%
+      setNames(NULL) %>%
+      ifelse(is.na(.), "", .)
+    
+    headers <- pop_sheet %>%
+      names %>%
+      tibble(header = .) %>%
+      mutate(
+        header = ifelse(grepl("x_", header, ignore.case = TRUE), NA, header),
+        group = stats::filter(!is.na(header), 1, "recursive")
+      ) %>%
+      group_by(group) %>%
+      mutate(
+        label = tolower(first(header)),
+        label = gsub("[ y\n]+", "_", label)
+      ) %>%
+      pull(label)
+    
+    var_names <- paste(headers, years, sep = "_")
+    
+    # Prepare data
+    pop_sheet <- pop_sheet %>%
+      # Set names and keep unique columns
+      set_names(var_names) %>%
+      subset(select = !duplicated(names(.)) & !grepl("_[0-9]_", names(.))) %>%
+      # Fix department and municipality data
+      mutate(
+        department = ifelse(
+          test = is.na(lag(departamento_municipio_, n = 1)),
+          yes = departamento_municipio_,
+          no = NA
+        ),
+        group = as.integer(stats::filter(!is.na(department), 1, "recursive"))
+      ) %>%
+      filter(!is.na(departamento_municipio_)) %>%
+      group_by(group) %>%
+      mutate(department = first(department)) %>%
+      slice(-1) %>%
+      ungroup %>%
+      select(
+        department, municipality = departamento_municipio_, everything(), -group
+      ) %>%
+      # Gather year and type
+      gather(
+        key = group, value = population, -department, -municipality
+      ) %>%
+      mutate(population = as.numeric(population)) %>%
+      separate(col = group, into = c("type", "year"), convert = TRUE) %>%
+      select(type, year, department, municipality, population)
+    
+    # Return data
+    return(pop_sheet)
+  }
+  
+  
+  # Read all sheets
+  pop_file <- lapply(pop_sheets, read_pop_sheet) %>%
+    bind_rows(.id = "sex") %>%
+    mutate(
+      sex = recode(
+        sex,
+        Hombres = "male",
+        Mujeres = "female",
+        Total = "all"
+      )
+    )
+  
+  cat("\n")
+  
+  # Return data
+  return(pop_file)
+}
+
+
+
+file_name <- "data/raw/municipalities/2016-2020.xlsx" %>%
+  set_names(.)
+
+# Read all files
+pop_2016_2020_aggregate <- lapply(
+  file_name,
+  read_population_2016
+) %>%
+  bind_rows()
+
 
 
 
