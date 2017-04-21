@@ -451,4 +451,113 @@ pop_2016_2020_aggregate <- lapply(
 
 
 
+#------------------------------------------------------------------------------*
+# Project simple age estimates for 2016-2020 ----
+#------------------------------------------------------------------------------*
+
+# Binom model for proportion of population in each age
+pop_binom <- pop_2000_2015 %>%
+  group_by(department, municipality, year, sex) %>%
+  mutate(
+    total = sum(population),
+    prop = population / total
+  ) %>%
+  # Model for each "independent" group
+  group_by(department, municipality, sex) %>%
+  do({
+    data <- .
+    
+    tibble(
+      binomial = list(
+        glm(
+          data = data, formula = population / total ~ year + age,
+          family = binomial(link = "logit"), weights = total
+        )
+      )
+    )
+  }) %>%
+  ungroup
+
+
+# Match municipality names
+pop_2016_2020_aggregate <- pop_2016_2020_aggregate %>%
+  # Standardize characters and casing
+  mutate_at(
+    vars(department, municipality),
+    funs(
+      gsub(
+        "(^| )([a-z])", "\\1\\U\\2",
+        gsub("(^ +)|( +$)", "", tolower(iconv(., to = "ASCII//TRANSLIT"))),
+        perl = TRUE
+      )
+    )
+  ) %>%
+  # Fix mismatches
+  mutate(
+    municipality = recode(
+      municipality,
+      "La Tinta" = "Santa Catalina La Tinta",
+      "Santa Catarina La Tinta" = "Santa Catalina La Tinta",
+      "San Agustin Acasagustlan" = "San Agustin Acasaguastlan",
+      "Chinuautla" = "Chinautla",
+      "Petapa" = "San Miguel Petapa",
+      "Santiago Chimaltenanango" = "Santiago Chimaltenango",
+      "Acatempa" = "San Jose Acatempa",
+      "San Bartolome" = "San Bartolome Milpas Altas",
+      "Santiago Sactepequez" = "Santiago Sacatepequez",
+      "Santa Catalina Ixtahuacan" = "Santa Catarina Ixtahuacan"
+    ),
+    municipality = ifelse(
+      test = department == "Huehuetenango" & municipality == "Concepcion",
+      yes = "Concepcion Huista",
+      no = municipality
+    )
+  )
+
+
+
+# Check for mismatches
+pop_2016_2020_aggregate %>%
+  group_by(department, municipality) %>%
+  tally %>%
+  filter(
+    !municipality %in% pop_2000_2015$municipality
+  ) %>%
+  nrow %>%
+  {if(. > 0) stop("Check municipality names, found ", ., " mismatches.")}
+
+
+# Get proportion by age for each year
+pop_2016_2020_predicted <- pop_2016_2020_aggregate %>%
+  filter(sex %in% c("male", "female"), type == "total") %>%
+  left_join(
+    expand.grid(
+      age = unique(pop_2000_2015$age),
+      year = unique(pop_2016_2020_aggregate$year)
+    )
+  ) %>%
+  nest(year, age, population) %>%
+  left_join(pop_binom) %>%
+  mutate(
+    predicted = map2(
+      .x = binomial, .y = data,
+      .f = ~cbind(.y, predicted = predict(.x, .y, type = "response"))
+    )
+  )
+
+
+# Predict population by simeple age
+pop_2016_2020 <- pop_2016_2020_predicted %>%
+  unnest(predicted) %>%
+  group_by(department, municipality, year, sex) %>%
+  mutate(
+    predicted = predicted / sum(predicted),
+    population = population * predicted
+  ) %>%
+  ungroup %>%
+  select_(.dots = names(pop_2000_2015))
+
+
+
+
 # End of script
