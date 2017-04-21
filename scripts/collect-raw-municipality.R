@@ -560,4 +560,20 @@ pop_2016_2020 <- pop_2016_2020_predicted %>%
 
 
 
+#------------------------------------------------------------------------------*
+# Save data ----
+#------------------------------------------------------------------------------*
+
+# Bind with previous years
+population <- pop_2000_2015 %>%
+  bind_rows(pop_2016_2020)
+
+# Save population data for use in R
+save(
+  population, file = "data/processed/gt_2000_2020_municipality_population.RData"
+)
+
+
+
+
 # End of script
