@@ -1,0 +1,14 @@
+# Ignore Rproject files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Ignore raw data files
+data/raw/*
+*.zip
+*.tar
+*.gz
+*.xls*
+*.RData
+*.rds
