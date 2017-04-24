@@ -140,7 +140,7 @@ file.remove(file_list)
     
 
 #------------------------------------------------------------------------------*
-# Collect data from 2000-2010 period ----
+# Collect data from 2011-2015 period ----
 #------------------------------------------------------------------------------*
 
 # Zip path
@@ -178,19 +178,39 @@ read_population_2011 <- function(file_path, skip = 3){
     # Report sheet (year)
     cat(" ", sheet)
     
-    fixes <- c(
+    
+    #--------------------------------------------------------------------------*
+    # Fix parameters for specific files / sheets
+    #--------------------------------------------------------------------------*
+    
+    # Fix individual skip parameters
+    fixes_skip <- c(
       "Totonicapan", "Suchitepequez", "Retalhuleu", "Quiche", "Alta Verapaz",
       "Peten", "Jutiapa", " Jalapa", "Chiquimula", "Izabal", "Santa Rosa"
     )
     
-    # Configuration exceptions
     skip <- case_when(
-      # department == "Santa Rosa" & sheet == "2012" ~ 4,
-      # department == "Santa Rosa" & sheet == "2015" ~ 5,
-      department %in% fixes & sheet == "2012" ~ 4,
-      department %in% fixes & sheet == "2015" ~ 5,
+      department %in% fixes_skip & sheet == "2012" ~ 4,
+      department %in% fixes_skip & sheet == "2015" ~ 5,
       TRUE ~ skip
     )
+    
+    # Fix missing municipality names
+    fix_municipalities <- function(.data){
+      .data %>%
+        # Setup fixing rules
+        mutate(
+          municipality = case_when(
+            department == "Santa Rosa" & grepl("^X", municipality) ~ "Nueva Santa Rosa",
+            TRUE ~ municipality
+          )
+        ) %>%
+        return()
+    }
+    
+    #--------------------------------------------------------------------------*
+    # Get data
+    #--------------------------------------------------------------------------*
     
     # Read file contents
     pop_sheet <- read_excel(
@@ -230,6 +250,8 @@ read_population_2011 <- function(file_path, skip = 3){
         ),
         department = department
       ) %>%
+      # Fix missingmunicipality names
+      fix_municipalities() %>%
       select(year, department, municipality, sex = sexo, age, population) %>%
       mutate(
         # Fix factors
