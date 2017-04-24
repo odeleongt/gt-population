@@ -178,19 +178,27 @@ read_population_2011 <- function(file_path, skip = 3){
     # Report sheet (year)
     cat(" ", sheet)
     
-    fixes <- c(
+    
+    #--------------------------------------------------------------------------*
+    # Fix parameters for specific files / sheets
+    #--------------------------------------------------------------------------*
+    
+    # Fix individual skip parameters
+    fixes_skip <- c(
       "Totonicapan", "Suchitepequez", "Retalhuleu", "Quiche", "Alta Verapaz",
       "Peten", "Jutiapa", " Jalapa", "Chiquimula", "Izabal", "Santa Rosa"
     )
     
-    # Configuration exceptions
     skip <- case_when(
-      # department == "Santa Rosa" & sheet == "2012" ~ 4,
-      # department == "Santa Rosa" & sheet == "2015" ~ 5,
-      department %in% fixes & sheet == "2012" ~ 4,
-      department %in% fixes & sheet == "2015" ~ 5,
+      department %in% fixes_skip & sheet == "2012" ~ 4,
+      department %in% fixes_skip & sheet == "2015" ~ 5,
       TRUE ~ skip
     )
+    
+    
+    #--------------------------------------------------------------------------*
+    # Get data
+    #--------------------------------------------------------------------------*
     
     # Read file contents
     pop_sheet <- read_excel(
