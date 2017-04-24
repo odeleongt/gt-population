@@ -195,6 +195,18 @@ read_population_2011 <- function(file_path, skip = 3){
       TRUE ~ skip
     )
     
+    # Fix missing municipality names
+    fix_municipalities <- function(.data){
+      .data %>%
+        # Setup fixing rules
+        mutate(
+          municipality = case_when(
+            department == "Santa Rosa" & grepl("^X", municipality) ~ "Nueva Santa Rosa",
+            TRUE ~ municipality
+          )
+        ) %>%
+        return()
+    }
     
     #--------------------------------------------------------------------------*
     # Get data
@@ -238,6 +250,8 @@ read_population_2011 <- function(file_path, skip = 3){
         ),
         department = department
       ) %>%
+      # Fix missingmunicipality names
+      fix_municipalities() %>%
       select(year, department, municipality, sex = sexo, age, population) %>%
       mutate(
         # Fix factors
