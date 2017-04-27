@@ -53,13 +53,14 @@ births <- births %>%
         stringr::str_pad(anoocu, width = 2, side = "left", pad = "0"),
         mesocu, diaocu, sep = "-"
       )
-    )
+    ),
+    event_year = year(event_date)
   ) %>%
   select(
+    # Event data
+    event_year, event_date, event_department = depocu, event_municipality = mupocu,
     # Record metadata
     record_date, record_department = depreg, record_municipality = mupreg,
-    # Event data
-    event_date, event_department = depocu, event_municipality = mupocu,
     # Mother residency location
     mother_department = deprem, mother_municipality = muprem
   )
@@ -109,6 +110,7 @@ deaths <- deaths %>%
         mesocu, diaocu, sep = "-"
       )
     ),
+    event_year = year(event_date),
     age_unit = recode(
       perdif,
       "1" = "days",
@@ -121,10 +123,10 @@ deaths <- deaths %>%
     age_days = as.integer(event_date - birth_date)
   ) %>%
   select(
+    # Event data
+    event_year, event_date, event_department = depocu, event_municipality = mupocu,
     # Record metadata
     record_date, record_department = depreg, record_municipality = mupreg,
-    # Event data
-    event_date, event_department = depocu, event_municipality = mupocu,
     # Deceased data
     birth_date, age_days
   )
