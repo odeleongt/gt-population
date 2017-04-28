@@ -85,7 +85,18 @@ mid_years <- births %>%
     data_frame(
       event_year = seq(min(year(births$event_date)), year(.$mid_year))
     )
-  })
+  }) %>%
+  ungroup()
+
+# Calculate mid year counts
+mid_year_counts <- mid_years %>%
+  # Relevant births for each year
+  left_join(births) %>%
+  filter(event_date < mid_year) %>%
+  # Calculate age at mid year
+  mutate(
+    age_days = as.integer(mid_year - event_date)
+  )
 
 
 
