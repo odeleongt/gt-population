@@ -137,16 +137,39 @@ mid_years <- births %>%
   }) %>%
   ungroup()
 
-# Calculate mid year counts
-mid_year_counts <- mid_years %>%
+# Calculate mid year ages given birth date
+mid_year_ages <- mid_years %>%
   # Relevant births for each year
-  left_join(births) %>%
+  left_join(unique(select(births, event_year, event_date))) %>%
   filter(event_date < mid_year) %>%
-  # Calculate age at mid year
-  mutate(
-    age_days = as.integer(mid_year - event_date)
-  )
+  # Get age at each mid year for each unique birth date
+  group_by(mid_year, event_date) %>%
+  do(
+    age_exclusive = mutate(
+      age_periods_exclusive,
+      age_date = .$event_date + period
+    ),
+    age_cumulative = mutate(
+      age_periods_cumulative,
+      age_date = .$event_date + period
+    )
+  ) %>%
+  ungroup()
 
+# Label exclusive ages
+exclusive_ages <- mid_year_ages %>%
+  unnest(age_exclusive) %>%
+  filter(age_date < mid_year) %>%
+  group_by(mid_year, event_date) %>%
+  filter(correlative == max(correlative))
+
+
+# Label cumulative ages
+cumulative_ages <- mid_year_ages %>%
+  unnest(age_cumulative) %>%
+  filter(age_date < mid_year) %>%
+  group_by(mid_year, event_date) %>%
+  filter(correlative == max(correlative))
 
 
 
