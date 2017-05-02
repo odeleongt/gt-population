@@ -69,6 +69,55 @@ births <- births %>%
 
 
 #------------------------------------------------------------------------------*
+# Define age groups ----
+#------------------------------------------------------------------------------*
+
+# Mutually exclusive ages
+age_periods_exclusive <- tibble(
+  correlative = c(
+    1,           2,                   3,                   4,
+    5,                    6,                    7,
+    8
+  ),
+  label = c(
+    # Mutually exclusive
+    "0-27 days", "28 days-<3 month",  "3-5 months",        "6-8 months",
+    "9-11 months",        "12-23 months",       "24-35 months",
+    "36-59 months"
+  ),
+  period = c(
+    # Mutually exclusive
+    days(27),    months(3) - days(1), months(6) - days(1), months(9) - days(1),
+    months(12) - days(1), months(24) - days(1), months(36) - days(1),
+    months(60) - days(1)
+  )
+)
+
+# Cumulative 1
+age_periods_cumulative <- tibble(
+  correlative = c(
+    1,                   2,                   3,
+    4
+  ),
+  label = c(
+    # Cumulative
+    "0-11 months",       "12-59 months",      "24-59 months",
+    "0-59 months"
+  ),
+  period = c(
+    # Cumulative
+    months(12) - days(1), months(60) - days(1), months(60) - days(1),
+    months(60) - days(1)
+  )
+)
+
+# One off
+# "24-59 months", "0-59 months"
+
+
+
+
+#------------------------------------------------------------------------------*
 # Calculate mid-year counts ----
 #------------------------------------------------------------------------------*
 
