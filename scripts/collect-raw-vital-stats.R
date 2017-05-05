@@ -72,47 +72,14 @@ births <- births %>%
 # Define age groups ----
 #------------------------------------------------------------------------------*
 
-# Mutually exclusive ages
-age_periods_exclusive <- tibble(
-  correlative = c(
-    1,           2,                   3,                   4,
-    5,                    6,                    7,
-    8
-  ),
-  label = c(
-    # Mutually exclusive
-    "0-27 days", "28 days-<3 month",  "3-5 months",        "6-8 months",
-    "9-11 months",        "12-23 months",       "24-35 months",
-    "36-59 months"
-  ),
-  period = c(
-    # Mutually exclusive
-    days(27),    months(3) - days(1), months(6) - days(1), months(9) - days(1),
-    months(12) - days(1), months(24) - days(1), months(36) - days(1),
-    months(60) - days(1)
-  )
+# Order age groups for output
+age_groups <- c(
+  "0-27 days", "28 days-<3 month", "3-5 months", "6-8 months", "9-11 months",
+  "0-11 months",
+  "12-23 months", "24-35 months", "36-59 months",
+  "0-59 months", 
+  "12-59 months", "24-59 months"
 )
-
-# Cumulative 1
-age_periods_cumulative <- tibble(
-  correlative = c(
-    1,                   2,                   3,
-    4
-  ),
-  label = c(
-    # Cumulative
-    "0-11 months",       "12-59 months",      "24-59 months",
-    "0-59 months"
-  ),
-  period = c(
-    # Cumulative
-    months(12) - days(1), months(60) - days(1), months(60) - days(1),
-    months(60) - days(1)
-  )
-)
-
-# One off
-# "24-59 months", "0-59 months"
 
 
 
@@ -128,7 +95,7 @@ mid_years <- births %>%
   unique() %>%
   paste0("-07-01") %>%
   ymd() %>%
-  data_frame(mid_year = .) %>%
+  data_frame(mid_year = ., event_year = NA) %>%
   group_by(mid_year) %>%
   do({
     data_frame(
@@ -141,35 +108,129 @@ mid_years <- births %>%
 mid_year_ages <- mid_years %>%
   # Relevant births for each year
   left_join(unique(select(births, event_year, event_date))) %>%
-  filter(event_date < mid_year) %>%
-  # Get age at each mid year for each unique birth date
-  group_by(mid_year, event_date) %>%
-  do(
-    age_exclusive = mutate(
-      age_periods_exclusive,
-      age_date = .$event_date + period
-    ),
-    age_cumulative = mutate(
-      age_periods_cumulative,
-      age_date = .$event_date + period
-    )
+  filter(event_date < mid_year)
+
+
+labeled_ages <- mid_year_ages %>%
+  # Tag all births for both age group types
+  mutate(
+    group = "exclusive",
+    correlative = 1,
+    label = "0-27 days",
+    date_threshold = mid_year - days(27)
   ) %>%
-  ungroup()
-
-# Label exclusive ages
-exclusive_ages <- mid_year_ages %>%
-  unnest(age_exclusive) %>%
-  filter(age_date < mid_year) %>%
+  bind_rows(
+    mutate(
+      .,
+      group = "exclusive",
+      correlative = 2,
+      label = "28 days-<3 month",
+      date_threshold = mid_year - months(3)
+    ),
+    mutate(
+      .,
+      group = "exclusive",
+      correlative = 3,
+      label = "3-5 months",
+      date_threshold = mid_year - months(6)
+    ),
+    mutate(
+      .,
+      group = "exclusive",
+      correlative = 4,
+      label = "6-8 months",
+      date_threshold = mid_year -  months(9)
+    ),
+    mutate(
+      .,
+      group = "exclusive",
+      correlative = 5,
+      label = "9-11 months",
+      date_threshold = mid_year -  months(12)
+    ),
+    mutate(
+      .,
+      group = "exclusive",
+      correlative = 6,
+      label = "12-23 months",
+      date_threshold = mid_year -  months(24)
+    ),
+    mutate(
+      .,
+      group = "exclusive",
+      correlative = 7,
+      label = "24-35 months",
+      date_threshold = mid_year -  months(36)
+    ),
+    mutate(
+      .,
+      group = "exclusive",
+      correlative = 8,
+      label = "36-59 months",
+      date_threshold = mid_year -  months(60)
+    )
+  ) %>% 
+  # Assign possible age groups
+  mutate(
+    keep = event_date > date_threshold
+  ) %>%
+  filter(keep) %>%
+  select(-keep, -date_threshold) %>%
+  # Pick oldest applicable age group
+  arrange(mid_year, event_date, correlative) %>%
   group_by(mid_year, event_date) %>%
-  filter(correlative == max(correlative))
+  filter(correlative == min(correlative)) %>%
+  ungroup %>%
+  select(mid_year, event_date, label)
 
 
-# Label cumulative ages
-cumulative_ages <- mid_year_ages %>%
-  unnest(age_cumulative) %>%
-  filter(age_date < mid_year) %>%
-  group_by(mid_year, event_date) %>%
-  filter(correlative == max(correlative))
+# Label other cummulative age groups
+labeled_ages2 <- mid_year_ages %>%
+  select(mid_year, event_date) %>%
+  mutate(
+    months_12 = mid_year - months(12),
+    months_24 = mid_year - months(25) + days(1),
+    months_59 = mid_year - months(60),
+    # born 12-59 months before midyear
+    "12-59 months" = event_date > months_59 & event_date <= months_12,
+    # born 24-59 months before midyear
+    "24-59 months" = event_date > months_59 & event_date <= months_24,
+    # Any age before 12 months
+    "0-11 months" = event_date > months_12 & event_date < mid_year,
+    # Any age before 60 months
+    "0-59 months" = event_date > months_59 & event_date < mid_year
+  ) %>%
+  select(-months_12, -months_24, -months_59) %>%
+  gather(key = label, value = keep, -mid_year, -event_date) %>%
+  filter(keep) %>%
+  select(-keep)
+
+
+# Bind labeled birth dates
+birth_age_groups <- labeled_ages %>%
+  bind_rows(labeled_ages2)
+
+
+# Count live people by age group
+alive <- births %>%
+  # Births by date for each location
+  count(
+    year = event_year,
+    department = event_department, municipality = event_municipality,
+    event_date
+  ) %>%
+  # Label with ages at each mid-year
+  left_join(birth_age_groups) %>%
+  # Only keep births inside the mid year pediods
+  filter(!is.na(label)) %>%
+  # Children alive by age group at each mid-year
+  count(year = year(mid_year), department, municipality, age_group = label) %>%
+  rename(alive = nn) %>%
+  mutate(
+    age_group = factor(age_group, levels = age_groups, ordered = TRUE)
+  ) %>%
+  arrange(department, municipality, year, age_group)
+
 
 
 
