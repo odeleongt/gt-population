@@ -192,13 +192,13 @@ labeled_ages2 <- mid_year_ages %>%
     months_24 = mid_year - months(25) + days(1),
     months_59 = mid_year - months(60),
     # born 12-59 months before midyear
-    "12-59 months" = event_date > months_59 & event_date <= months_12,
+    "12-59 months" = event_date >= months_59 & event_date < months_12,
     # born 24-59 months before midyear
-    "24-59 months" = event_date > months_59 & event_date <= months_24,
+    "24-59 months" = event_date >= months_59 & event_date < months_24,
     # Any age before 12 months
-    "0-11 months" = event_date > months_12 & event_date < mid_year,
+    "0-11 months" = event_date >= months_12 & event_date < mid_year,
     # Any age before 60 months
-    "0-59 months" = event_date > months_59 & event_date < mid_year
+    "0-59 months" = event_date >= months_59 & event_date < mid_year
   ) %>%
   select(-months_12, -months_24, -months_59) %>%
   gather(key = label, value = keep, -mid_year, -event_date) %>%
