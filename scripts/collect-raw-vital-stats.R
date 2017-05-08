@@ -172,7 +172,7 @@ labeled_ages <- mid_year_ages %>%
   ) %>% 
   # Assign possible age groups
   mutate(
-    keep = event_date > date_threshold
+    keep = event_date >= date_threshold
   ) %>%
   filter(keep) %>%
   select(-keep, -date_threshold) %>%
