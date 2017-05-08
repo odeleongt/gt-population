@@ -221,8 +221,14 @@ alive <- births %>%
   ) %>%
   # Label with ages at each mid-year
   left_join(birth_age_groups) %>%
-  # Only keep births inside the mid year pediods
-  filter(!is.na(label)) %>%
+  filter(
+    # Only keep births inside the mid year pediods
+    !is.na(label),
+    # Ignore first half of 2009 for every succesive year
+    (mid_year > ymd("2009-07-01") & event_date >= ymd("2009-07-01")),
+    # Ignore first year, which can not be completed
+    mid_year > ymd("2009-07-01")
+  ) %>%
   # Children alive by age group at each mid-year
   count(year = year(mid_year), department, municipality, age_group = label) %>%
   rename(alive = nn) %>%
