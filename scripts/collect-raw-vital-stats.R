@@ -18,6 +18,47 @@ data_path <- "data/raw/vital-statistics/"
 
 
 #------------------------------------------------------------------------------*
+# Load locations data ----
+#------------------------------------------------------------------------------*
+
+# Get municipality codes
+municipalities <- sf::read_sf("data/raw/geo-data/municipalities.shp") %>%
+  select(muni_id = COD_MUNI, municipality = MUNICIPIO) %>%
+  mutate(
+    # Fix encoding and case
+    municipality = iconv(municipality, from = "Latin1", to = "ASCII//TRANSLIT"),
+    municipality = gsub("(^| )([a-z])", "\\1\\U\\2", municipality, perl = TRUE),
+    # Fix errors in names
+    municipality = recode(
+      muni_id,
+      "0413" = "San Andres Itzapa",
+      "2009" = "Quezaltepeque",
+      "0204" = "San Cristobal Acasaguastlan",
+      "0502" = "Santa Lucia Cotzumalguapa",
+      "0506" = "Tiquizate",
+      "0117" = "San Miguel Petapa",
+      "0111" = "San Raimundo",
+      "1314" = "San Rafael La Independencia",
+      "1320" = "San Sebastian Huehuetenango",
+      "1326" = "Santa Cruz Barillas",
+      "2107" = "Mataquescuintla",
+      "2217" = "Quezada",
+      "1420" = "Ixcan",
+      "1105" = "San Felipe",
+      "0712" = "San Antonio Palopo",
+      "0711" = "Santa Catarina Palopo",
+      "1004" = "San Bernardino",
+      "1009" = "San Pablo Jocopilas",
+      "1011" = "San Miguel Panan",
+      "0806" = "Santa Maria Chiquimula",
+      .default = municipality
+    )
+  )
+
+
+
+
+#------------------------------------------------------------------------------*
 # Load births data ----
 #------------------------------------------------------------------------------*
 
