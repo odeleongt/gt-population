@@ -257,7 +257,7 @@ alive <- births %>%
   # Births by date for each location
   count(
     year = event_year,
-    department = event_department, municipality = event_municipality,
+    department = mother_department, municipality = mother_municipality,
     event_date
   ) %>%
   # Label with ages at each mid-year
