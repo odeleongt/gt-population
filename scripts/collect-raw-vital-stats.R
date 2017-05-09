@@ -279,8 +279,8 @@ alive <- births %>%
   arrange(department, municipality, year, age_group) %>%
   # Keep only used departments
   filter(department %in% c("6", "9")) %>%
-  # Fix municipality codes
   mutate(
+    # Fix municipality codes
     municipality = ifelse(
       test = as.integer(municipality) < 99,
       yes = paste0(
@@ -288,6 +288,12 @@ alive <- births %>%
         stringr::str_pad(municipality, width = 2, side = "left", pad = "0")
       ),
       no = municipality
+    ),
+    # Label departments
+    department = recode(
+      department,
+      "6" = "Santa Rosa",
+      "9" = "Quetzaltenango"
     )
   ) %>%
   # Tag with municipality names
