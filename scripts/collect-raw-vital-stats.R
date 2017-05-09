@@ -277,6 +277,8 @@ alive <- births %>%
     age_group = factor(age_group, levels = age_groups, ordered = TRUE)
   ) %>%
   arrange(department, municipality, year, age_group) %>%
+  # Keep only used departments
+  filter(department %in% c("6", "9")) %>%
   # Fix municipality codes
   mutate(
     municipality = ifelse(
