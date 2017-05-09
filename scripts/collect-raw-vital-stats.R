@@ -298,7 +298,8 @@ alive <- births %>%
   ) %>%
   # Tag with municipality names
   rename(muni_id = municipality) %>%
-  left_join(municipalities)
+  left_join(municipalities) %>%
+  select(year, department, municipality, age_group, alive)
 
 
 
