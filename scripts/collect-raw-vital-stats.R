@@ -276,7 +276,21 @@ alive <- births %>%
   mutate(
     age_group = factor(age_group, levels = age_groups, ordered = TRUE)
   ) %>%
-  arrange(department, municipality, year, age_group)
+  arrange(department, municipality, year, age_group) %>%
+  # Fix municipality codes
+  mutate(
+    municipality = ifelse(
+      test = as.integer(municipality) < 99,
+      yes = paste0(
+        stringr::str_pad(department, width = 2, side = "left", pad = "0"),
+        stringr::str_pad(municipality, width = 2, side = "left", pad = "0")
+      ),
+      no = municipality
+    )
+  ) %>%
+  # Tag with municipality names
+  rename(muni_id = municipality) %>%
+  left_join(municipalities)
 
 
 
