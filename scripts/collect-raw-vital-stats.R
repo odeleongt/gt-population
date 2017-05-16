@@ -318,7 +318,7 @@ rm(processed_file)
 # Sum simple year projections for 
 simple_year <- population %>%
   filter(
-    between(year, 2010, 2011),                            # Years missing data
+    between(year, 2010, 2015),                            # Years missing data
     between(age, 0, 4),                                   # Relevant ages
     department %in% c("Santa Rosa", "Quetzaltenango")     # Relevant departments
   ) %>%
