@@ -253,7 +253,7 @@ birth_age_groups <- labeled_ages %>%
 
 
 # Count live people by age group
-alive <- births %>%
+local_births <- births %>%
   # Births by date for each location
   count(
     year = event_year,
@@ -270,9 +270,9 @@ alive <- births %>%
     # Ignore first year, which can not be completed
     mid_year > ymd("2009-07-01")
   ) %>%
-  # Children alive by age group at each mid-year
+  # Children born by age group at each mid-year
   count(year = year(mid_year), department, municipality, age_group = label) %>%
-  rename(alive = nn) %>%
+  rename(births = nn) %>%
   mutate(
     age_group = factor(age_group, levels = age_groups, ordered = TRUE)
   ) %>%
@@ -299,7 +299,7 @@ alive <- births %>%
   # Tag with municipality names
   rename(muni_id = municipality) %>%
   left_join(municipalities) %>%
-  select(year, department, municipality, age_group, alive)
+  select(year, department, municipality, age_group, births)
 
 
 
@@ -410,7 +410,7 @@ simple_year <- population %>%
   ) %>%
   # Summarize
   group_by(year, department, municipality, age_group) %>%
-  summarize(alive = sum(population))
+  summarize(population = sum(population))
 
 
 
