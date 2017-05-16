@@ -128,6 +128,10 @@ age_groups <- c(
 #------------------------------------------------------------------------------*
 # Calculate mid-year counts ----
 #------------------------------------------------------------------------------*
+# Mid year counts for ages < 1 year used to estimate the proportion of children
+# in each age group, which will be used to estimate the population in each
+# age group from the official population projections.
+#------------------------------------------------------------------------------*
 
 # Mid year dates
 mid_years <- births %>%
@@ -188,27 +192,6 @@ labeled_ages <- mid_year_ages %>%
       correlative = 5,
       label = "9-11 months",
       date_threshold = mid_year -  months(12)
-    ),
-    mutate(
-      .,
-      group = "exclusive",
-      correlative = 6,
-      label = "12-23 months",
-      date_threshold = mid_year -  months(24)
-    ),
-    mutate(
-      .,
-      group = "exclusive",
-      correlative = 7,
-      label = "24-35 months",
-      date_threshold = mid_year -  months(36)
-    ),
-    mutate(
-      .,
-      group = "exclusive",
-      correlative = 8,
-      label = "36-59 months",
-      date_threshold = mid_year -  months(60)
     )
   ) %>% 
   # Assign possible age groups
@@ -225,33 +208,6 @@ labeled_ages <- mid_year_ages %>%
   select(mid_year, event_date, label)
 
 
-# Label other cummulative age groups
-labeled_ages2 <- mid_year_ages %>%
-  select(mid_year, event_date) %>%
-  mutate(
-    months_12 = mid_year - months(12),
-    months_24 = mid_year - months(25) + days(1),
-    months_59 = mid_year - months(60),
-    # born 12-59 months before midyear
-    "12-59 months" = event_date >= months_59 & event_date < months_12,
-    # born 24-59 months before midyear
-    "24-59 months" = event_date >= months_59 & event_date < months_24,
-    # Any age before 12 months
-    "0-11 months" = event_date >= months_12 & event_date < mid_year,
-    # Any age before 60 months
-    "0-59 months" = event_date >= months_59 & event_date < mid_year
-  ) %>%
-  select(-months_12, -months_24, -months_59) %>%
-  gather(key = label, value = keep, -mid_year, -event_date) %>%
-  filter(keep) %>%
-  select(-keep)
-
-
-# Bind labeled birth dates
-birth_age_groups <- labeled_ages %>%
-  bind_rows(labeled_ages2)
-
-
 # Count live people by age group
 local_births <- births %>%
   # Births by date for each location
@@ -261,7 +217,7 @@ local_births <- births %>%
     event_date
   ) %>%
   # Label with ages at each mid-year
-  left_join(birth_age_groups) %>%
+  left_join(labeled_ages) %>%
   filter(
     # Only keep births inside the mid year pediods
     !is.na(label),
