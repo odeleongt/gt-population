@@ -159,7 +159,6 @@ mid_year_ages <- mid_years %>%
 labeled_ages <- mid_year_ages %>%
   # Tag all births for both age group types
   mutate(
-    group = "exclusive",
     correlative = 1,
     label = "0-27 days",
     date_threshold = mid_year - days(28)
@@ -167,21 +166,18 @@ labeled_ages <- mid_year_ages %>%
   bind_rows(
     mutate(
       .,
-      group = "exclusive",
       correlative = 2,
       label = "28 days-<3 month",
       date_threshold = mid_year - months(3)
     ),
     mutate(
       .,
-      group = "exclusive",
       correlative = 3,
       label = "3-5 months",
       date_threshold = mid_year - months(6)
     ),
     mutate(
       .,
-      group = "exclusive",
       correlative = 4,
       label = "6-8 months",
       date_threshold = mid_year -  months(9)
