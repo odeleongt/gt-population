@@ -158,7 +158,7 @@ labeled_ages <- mid_year_ages %>%
     group = "exclusive",
     correlative = 1,
     label = "0-27 days",
-    date_threshold = mid_year - days(27)
+    date_threshold = mid_year - days(28)
   ) %>%
   bind_rows(
     mutate(
