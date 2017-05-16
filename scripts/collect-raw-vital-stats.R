@@ -305,51 +305,6 @@ alive <- births %>%
 
 
 #------------------------------------------------------------------------------*
-# Fix missing ages for each mid-year ----
-#------------------------------------------------------------------------------*
-# Use simple year age projections data
-#------------------------------------------------------------------------------*
-
-# Prepare simple year projections from raw data
-processed_file <- system("Rscript scripts/collect-raw-municipality.R", intern = TRUE)
-load(file = processed_file[length(processed_file)] )
-rm(processed_file)
-
-# Sum simple year projections for 
-simple_year <- population %>%
-  filter(
-    between(year, 2010, 2015),                            # Years missing data
-    between(age, 0, 4),                                   # Relevant ages
-    department %in% c("Santa Rosa", "Quetzaltenango")     # Relevant departments
-  ) %>%
-  group_by(year, department, municipality, age) %>%
-  summarize(population = sum(population)) %>%
-  # Keep necessary data
-  filter(
-    (year == 2013 & age == 4) |
-    (year == 2012 & between(age, 3, 4)) |
-    (year == 2011 & between(age, 2, 4)) |
-    (year == 2010 & between(age, 1, 4))
-  ) %>%
-  # Label age groups
-  mutate(
-    age_group = recode(
-      age,
-      "1" = "12-23 months",
-      "2" = "24-35 months",
-      "3" = "36-59 months",
-      "4" = "36-59 months"
-    ),
-    age_group = factor(age_group, levels = age_groups, ordered = TRUE)
-  ) %>%
-  # Summarize
-  group_by(year, department, municipality, age_group) %>%
-  summarize(alive = sum(population))
-
-
-
-
-#------------------------------------------------------------------------------*
 # Load deaths data ----
 #------------------------------------------------------------------------------*
 
@@ -411,6 +366,51 @@ deaths <- deaths %>%
     # Deceased data
     birth_date, age_days
   )
+
+
+
+
+#------------------------------------------------------------------------------*
+# Fix missing ages for each mid-year ----
+#------------------------------------------------------------------------------*
+# Use simple year age projections data
+#------------------------------------------------------------------------------*
+
+# Prepare simple year projections from raw data
+processed_file <- system("Rscript scripts/collect-raw-municipality.R", intern = TRUE)
+load(file = processed_file[length(processed_file)] )
+rm(processed_file)
+
+# Sum simple year projections for 
+simple_year <- population %>%
+  filter(
+    between(year, 2010, 2015),                            # Years missing data
+    between(age, 0, 4),                                   # Relevant ages
+    department %in% c("Santa Rosa", "Quetzaltenango")     # Relevant departments
+  ) %>%
+  group_by(year, department, municipality, age) %>%
+  summarize(population = sum(population)) %>%
+  # Keep necessary data
+  filter(
+    (year == 2013 & age == 4) |
+      (year == 2012 & between(age, 3, 4)) |
+      (year == 2011 & between(age, 2, 4)) |
+      (year == 2010 & between(age, 1, 4))
+  ) %>%
+  # Label age groups
+  mutate(
+    age_group = recode(
+      age,
+      "1" = "12-23 months",
+      "2" = "24-35 months",
+      "3" = "36-59 months",
+      "4" = "36-59 months"
+    ),
+    age_group = factor(age_group, levels = age_groups, ordered = TRUE)
+  ) %>%
+  # Summarize
+  group_by(year, department, municipality, age_group) %>%
+  summarize(alive = sum(population))
 
 
 
