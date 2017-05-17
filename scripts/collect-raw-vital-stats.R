@@ -453,7 +453,7 @@ proportion_age_group <- proportion_age_group %>%
   )
 
 # Check deviations from uniform distribution assumption
-proportion_age_group %>%
+different_rows <- proportion_age_group %>%
   mutate(
     group_month_interval = c(1, 2, 3, 3, 3),
     uniform_proportion = group_month_interval / 12,
@@ -462,6 +462,8 @@ proportion_age_group %>%
   filter(
     deviation > 0.01
   )
+
+if( nrow(different_rows) > 0 ) stop("Data deviates from uniform assumption")
 
 
 
