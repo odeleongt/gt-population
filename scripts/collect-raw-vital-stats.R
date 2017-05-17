@@ -480,7 +480,7 @@ load(file = processed_file[length(processed_file)] )
 rm(processed_file)
 
 # Sum simple year projections for 
-simple_year <- population %>%
+flu_age_groups <- population %>%
   filter(
     between(year, 2010, 2015),                            # Years missing data
     between(age, 0, 4),                                   # Relevant ages
@@ -488,26 +488,40 @@ simple_year <- population %>%
   ) %>%
   group_by(year, department, municipality, age) %>%
   summarize(population = sum(population)) %>%
-  # Keep necessary data
-  filter(
-    (year == 2013 & age == 4) |
-      (year == 2012 & between(age, 3, 4)) |
-      (year == 2011 & between(age, 2, 4)) |
-      (year == 2010 & between(age, 1, 4))
+  # Add population proportion for each age group <1
+  left_join(
+    mutate(proportion_age_group, age = 0, age_group = as.character(age_group))
   ) %>%
-  # Label age groups
   mutate(
+    # Estimate population for age groups <1 year
+    population = ifelse(
+      test = age == 0 & !is.na(proportion),
+      yes = population * proportion,
+      no = population
+    ),
     age_group = recode(
       age,
       "1" = "12-23 months",
       "2" = "24-35 months",
       "3" = "36-59 months",
-      "4" = "36-59 months"
+      "4" = "36-59 months",
+      .default = age_group
     ),
     age_group = factor(age_group, levels = age_groups, ordered = TRUE)
   ) %>%
+  # Add cummulative age_groups
+  bind_rows(
+    mutate(filter(., age_group < "12-23 months"), age_group = "0-11 months"),
+    mutate(., age_group = "0-59 months"),
+    mutate(filter(., age_group > "0-11 months"), age_group = "12-59 months"),
+    mutate(filter(., age_group > "12-23 months"), age_group = "24-59 months")
+  ) %>%
+  # Orger age groups
+  mutate(
+    age_group = factor(age_group, levels = age_groups, ordered = TRUE)
+  ) %>%
   # Summarize
-  group_by(year, department, municipality, age_group) %>%
+  group_by(department, municipality, year, age_group) %>%
   summarize(population = sum(population))
 
 
