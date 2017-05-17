@@ -328,6 +328,84 @@ local_deaths <- deaths %>%
     # Deceased data
     age_value, age_unit, birth_date
   )
+
+
+# Label death events
+labeled_deaths <- local_deaths %>%
+  # Add mid year dates
+  left_join(mid_years) %>%
+  # Keep only relevant dates (i.e. died before mid-year)
+  filter(
+    event_date < mid_year,               # died before mid-year
+    birth_date > (mid_year - years(1))   # born at most one year prior
+  ) %>%
+  # Count relevant deaths by birth date
+  count(
+    mid_year, event_department, event_municipality, birth_date
+  ) %>%
+  # Tag all births for both age group types
+  mutate(
+    correlative = 1,
+    label = "0-27 days",
+    date_threshold = mid_year - days(28)
+  ) %>%
+  bind_rows(
+    mutate(
+      .,
+      correlative = 2,
+      label = "28 days-<3 month",
+      date_threshold = mid_year - months(3)
+    ),
+    mutate(
+      .,
+      correlative = 3,
+      label = "3-5 months",
+      date_threshold = mid_year - months(6)
+    ),
+    mutate(
+      .,
+      correlative = 4,
+      label = "6-8 months",
+      date_threshold = mid_year -  months(9)
+    ),
+    mutate(
+      .,
+      correlative = 5,
+      label = "9-11 months",
+      date_threshold = mid_year -  months(12)
+    )
+  ) %>% 
+  # Assign possible age groups
+  mutate(
+    keep = birth_date >= date_threshold
+  ) %>%
+  filter(keep) %>%
+  select(-keep, -date_threshold) %>%
+  # Pick oldest applicable age group
+  arrange(mid_year, birth_date, correlative) %>%
+  group_by(mid_year, birth_date) %>%
+  filter(correlative == min(correlative)) %>%
+  ungroup %>%
+  # Label municipalities
+  left_join(municipalities, by = c(event_municipality = "muni_id")) %>%
+  mutate(
+    # Label departments
+    department = recode(
+      event_department,
+      `6` = "Santa Rosa",
+      `9` = "Quetzaltenango"
+    ),
+    # Configure age group as factor
+    label = factor(label, levels = age_groups, ordered = TRUE)
+  ) %>%
+  # Count deaths by age group
+  group_by(
+    year = year(mid_year), department, municipality, age_group = label
+  ) %>%
+  summarize(
+    deaths = sum(n)
+  ) %>%
+  ungroup
   )
 
 
