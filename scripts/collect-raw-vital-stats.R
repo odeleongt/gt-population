@@ -525,6 +525,10 @@ flu_age_groups <- population %>%
   summarize(population = sum(population))
 
 
+# Save population estimates for the age groups
+write_csv(flu_age_groups, path = "output/flu_edinburgh_population.csv")
+
+
 
 
 # End of script
