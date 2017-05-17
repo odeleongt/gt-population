@@ -12,3 +12,6 @@ data/raw/*
 *.xls*
 *.RData
 *.rds
+
+# Ignore output
+output/
