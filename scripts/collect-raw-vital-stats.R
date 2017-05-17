@@ -406,6 +406,61 @@ labeled_deaths <- local_deaths %>%
     deaths = sum(n)
   ) %>%
   ungroup
+
+
+
+
+#------------------------------------------------------------------------------*
+# Calculate proportion contributed by each <1 year age group ----
+#------------------------------------------------------------------------------*
+
+# Get proportions by year, department, municipality and age group
+proportion_age_group <- local_births %>%
+  left_join(labeled_deaths) %>%
+  mutate(
+    # Fill missing values with 0
+    deaths = ifelse(is.na(deaths), 0, deaths),
+    # Get alive count at mid-year
+    alive = births - deaths
+  ) %>%
+  group_by(year, department, municipality) %>%
+  mutate(
+    proportion = alive / sum(alive)
+  )
+
+# PLot proportions by year, department, municipality and age group
+plot_age_groups <- proportion_age_group %>%
+  ggplot(aes(x = year, y = proportion)) +
+  geom_line(
+    aes(group = municipality),
+    alpha = 0.3
+  ) +
+  geom_line(
+    data = summarize(
+      group_by(proportion_age_group, year, department, age_group),
+      proportion = mean(proportion)
+    ),
+    color = "red", size = 1
+  ) +
+  facet_grid(age_group ~ department) +
+  theme_bw()
+
+# Summarize to single proportion by age group <1 year
+proportion_age_group <- proportion_age_group %>%
+  group_by(age_group) %>%
+  summarize(
+    proportion = mean(proportion)
+  )
+
+# Check deviations from uniform distribution assumption
+proportion_age_group %>%
+  mutate(
+    group_month_interval = c(1, 2, 3, 3, 3),
+    uniform_proportion = group_month_interval / 12,
+    deviation = proportion - uniform_proportion
+  ) %>%
+  filter(
+    deviation > 0.01
   )
 
 
