@@ -277,12 +277,16 @@ deaths <- deaths %>%
   map(~map_df(.x, as.character)) %>%
   bind_rows(.id = "file_year")
 
-# Prepare birth "events" dataset
-deaths <- deaths %>%
-  # Ignore unknown ages
+# Prepare deaths "events" dataset
+local_deaths <- deaths %>%
   filter(
+    # Ignore unknown ages
     as.integer(edadif) < 999,
-    perdif != "9"
+    perdif != "9",
+    # Ignore >= 1 year
+    perdif %in% c("1", "2"),
+    # Keep only used departments
+    depreg %in% c("6", "9")
   ) %>%
   mutate(
     record_date = ymd(
@@ -307,16 +311,23 @@ deaths <- deaths %>%
       .default = NA_character_,
       .missing = NA_character_
     ),
-    birth_date = event_date - period(edadif, units = age_unit),
-    age_days = as.integer(event_date - birth_date)
+    age_value = as.integer(edadif)
   ) %>%
+  # Calculate ages case by case
+  rowwise() %>%
+  do({
+    bind_cols(
+      .,
+      data_frame(birth_date = .$event_date - period(.$age_value, units = first(.$age_unit)))
+    )
+  }) %>%
+  ungroup %>%
   select(
     # Event data
-    event_year, event_date, event_department = depocu, event_municipality = mupocu,
-    # Record metadata
-    record_date, record_department = depreg, record_municipality = mupreg,
+    event_year, event_date, event_department = depreg, event_municipality = mupreg,
     # Deceased data
-    birth_date, age_days
+    age_value, age_unit, birth_date
+  )
   )
 
 
