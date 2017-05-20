@@ -482,7 +482,7 @@ rm(processed_file)
 # Sum simple year projections for 
 flu_age_groups <- population %>%
   filter(
-    between(year, 2010, 2015),                            # Years missing data
+    between(year, 2010, 2016),                            # Years missing data
     between(age, 0, 4),                                   # Relevant ages
     department %in% c("Santa Rosa", "Quetzaltenango")     # Relevant departments
   ) %>%
