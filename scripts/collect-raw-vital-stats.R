@@ -264,8 +264,11 @@ local_births <- births %>%
     mid_year > ymd("2009-07-01")
   ) %>%
   # Children born by age group at each mid-year
-  count(year = year(mid_year), department, municipality, age_group = label) %>%
-  rename(births = nn) %>%
+  count(
+    year = year(mid_year), department, municipality, age_group = label,
+    wt = n
+  ) %>%
+  rename(births = n) %>%
   mutate(
     age_group = factor(age_group, levels = age_groups, ordered = TRUE)
   ) %>%
