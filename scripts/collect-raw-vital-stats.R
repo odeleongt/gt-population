@@ -95,15 +95,56 @@ births <- births %>%
         mesocu, diaocu, sep = "-"
       )
     ),
-    event_year = year(event_date)
+    event_year = year(event_date),
+    weight_kg = case_when(
+      libras == "99" | onzas == "99" ~ NA_real_,
+      TRUE ~ (as.numeric(libras) + as.numeric(onzas) / 16) / 2.20462
+    ),
+    sex = recode(
+      sexo,
+      "1" = "male",
+      "2" = "female"
+    ),
+    birth_type = recode_factor(
+      tipar,
+      "1" = "simple",
+      "2" = "double",
+      "3" = "triple",
+      "4" = "multiple"
+    ),
+    delivery_type = recode_factor(
+       viapar,
+       "1" = "Cesarean",
+       "2" = "Vaginal"
+    ),
+    mother_group = recode_factor(
+      pueblopm,
+      "1" = "Maya",
+      "2" = "Garífuna",
+      "3" = "Xinka",
+      "4" = "Mestizo / Ladino",
+      "5" = "Other",
+      "9" = "Ignored"
+    ),
+    father_group = recode_factor(
+      pueblopp,
+      "1" = "Maya",
+      "2" = "Garífuna",
+      "3" = "Xinka",
+      "4" = "Mestizo / Ladino",
+      "5" = "Other",
+      "9" = "Ignored"
+    )
   ) %>%
   select(
     # Event data
     event_year, event_date, event_department = depocu, event_municipality = mupocu,
     # Record metadata
     record_date, record_department = depreg, record_municipality = mupreg,
+    sex, weight_kg, birth_type, delivery_type,
     # Mother residency location
-    mother_department = deprem, mother_municipality = muprem
+    mother_department = deprem, mother_municipality = muprem,
+    mother_age = edadm, mother_group, father_group
   )
 
 
@@ -276,6 +317,91 @@ deaths <- deaths %>%
   map(~map_df(.x, zap_labels)) %>%
   map(~map_df(.x, as.character)) %>%
   bind_rows(.id = "file_year")
+
+
+# save deaths details
+
+det_deaths <- deaths %>%
+  mutate(
+    death_year = case_when(
+      is.na(anoocu) & !is.na(anoreg) ~ as.integer(anoreg),
+      anoocu == "9" ~ 2009L,
+      anoocu == "10" ~ 2010L,
+      TRUE ~ as.integer(anoocu)
+    ),
+    death_date = ymd(
+      paste(
+        death_year,
+        stringr::str_pad(mesocu, 2, "left", pad = "0"),
+        stringr::str_pad(diaocu, 2, "left", pad = "0"),
+        sep = "-"
+      )
+    ),
+    assistance_type = recode_factor(
+      asist,
+      "1" = "Medic",
+      "2" = "Paramedic",
+      "3" = "Midwife",
+      "4" = "Empiric",
+      "5" = "None",
+      "9" = "Ignored"
+    ),
+    death_site = recode_factor(
+      ocur,
+      "1" = "Hospital, public",
+      "2" = "Hospital, private",
+      "3" = "Health center",
+      "4" = "Social security",
+      "5" = "Public way",
+      "6" = "Household",
+      "7" = "Place of work",
+      "8" = "Other",
+      "9" = "Ignored"
+    ),
+    certified_death = recode_factor(
+      cerdef,
+      "1" = "Medic",
+      "2" = "Paramedic",
+      "3" = "Authority",
+      "9" = "Ignored"
+    ),
+    sex = recode(
+      sexo,
+      "1" = "male",
+      "2" = "female"
+    ),
+    cult_group = recode(
+      puedif,
+      "1" = "Maya",
+      "2" = "Garífuna",
+      "3" = "Xinka",
+      "4" = "Mestizo / Ladino",
+      "5" = "Other",
+      "9" = "Ignored"
+    ),
+    age_unit = recode(
+      perdif,
+      "1" = "days",
+      "2" = "months",
+      "3" = "years",
+      .default = NA_character_,
+      .missing = NA_character_
+    ),
+    age_value = as.integer(edadif)
+  ) %>%
+  select(
+    death_year, death_date,
+    sex, age_value, age_unit,
+    death_department = dnadif, death_municipality = mnadif,
+    dept_resid = dredif, muni_resid = mredif, cult_group,
+    cause_icd10 = caudef,
+    cause_description = caudef.descrip,
+    assistance_type, death_site, certified_death
+  ) %>%
+  print()
+
+
+
 
 # Prepare deaths "events" dataset
 local_deaths <- deaths %>%
