@@ -158,7 +158,8 @@ births <- births %>%
 age_groups <- c(
   "0-27 days", "28 days-<3 month", "3-5 months", "6-8 months", "9-11 months",
   "0-11 months",
-  "12-23 months", "24-35 months", "36-59 months",
+  "12-23 months", "24-35 months", "36-47 months", "48-59 months",
+  "0-5 months", "6-11 months",
   "0-59 months", 
   "12-59 months", "24-59 months"
 )
@@ -632,8 +633,8 @@ edinburgh_age_groups <- population %>%
       age,
       "1" = "12-23 months",
       "2" = "24-35 months",
-      "3" = "36-59 months",
-      "4" = "36-59 months",
+      "3" = "36-47 months",
+      "4" = "48-59 months",
       .default = age_group
     ),
     age_group = factor(age_group, levels = age_groups, ordered = TRUE)
@@ -643,7 +644,15 @@ edinburgh_age_groups <- population %>%
     mutate(filter(., age_group < "12-23 months"), age_group = "0-11 months"),
     mutate(., age_group = "0-59 months"),
     mutate(filter(., age_group > "0-11 months"), age_group = "12-59 months"),
-    mutate(filter(., age_group > "12-23 months"), age_group = "24-59 months")
+    mutate(filter(., age_group > "12-23 months"), age_group = "24-59 months"),
+    # additional age groups requested for the Edinburgh hMPV and PIV data
+    # 0-<6 months
+    mutate(filter(., age_group < "6-8 months"), age_group = "0-5 months"),
+    # 6-<12 months
+    mutate(
+      filter(., age_group > "3-5 months", age_group < "12-23 months"),
+      age_group = "6-11 months"
+    )
   ) %>%
   # Orger age groups
   mutate(
