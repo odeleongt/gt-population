@@ -609,7 +609,7 @@ load(file = processed_file[length(processed_file)] )
 rm(processed_file)
 
 # Sum simple year projections for 
-flu_age_groups <- population %>%
+edinburgh_age_groups <- population %>%
   filter(
     between(year, 2010, 2017),                            # Years missing data
     between(age, 0, 4),                                   # Relevant ages
@@ -655,7 +655,7 @@ flu_age_groups <- population %>%
 
 
 # Save population estimates for the age groups
-write_csv(flu_age_groups, path = "output/flu_edinburgh_population.csv")
+write_csv(edinburgh_age_groups, path = "output/edinburgh_population.csv")
 
 
 
