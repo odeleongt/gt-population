@@ -237,7 +237,7 @@ labeled_ages <- mid_year_ages %>%
   ) %>%
   filter(keep) %>%
   select(-keep, -date_threshold) %>%
-  # Pick oldest applicable age group
+  # Pick youngest applicable age group
   arrange(mid_year, event_date, correlative) %>%
   group_by(mid_year, event_date) %>%
   filter(correlative == min(correlative)) %>%
